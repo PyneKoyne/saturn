@@ -12,7 +12,6 @@ import {
 } from 'y-codemirror.next'
 import { EditorView, keymap, ViewPlugin } from '@codemirror/view'
 import { diff } from 'fast-myers-diff'
-import { v4 as uuid } from 'uuid'
 
 export const usercolors = [
   { color: '#30bced', light: '#30bced33' },
@@ -118,8 +117,6 @@ export const hostYTab = (tab: EditorTab) => {
   if (tab.yjs || ydocs[tab.uuid]) {
     throw new Error('tab already seems to be hosted')
   }
-
-  tab.uuid = uuid()
 
   const { extensions, ytext, ydoc, undoManager } = createExtensions(tab.uuid)
 
