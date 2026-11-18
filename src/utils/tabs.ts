@@ -330,7 +330,7 @@ export function useTabs(): TabsResult {
   }
 
   restore().then(() => {})
-  window.setInterval(backup, 1000)
+  window.setInterval(backup, 20)
   watch(() => editor.tabs.length, backup)
 
   const tab = computed(() => {

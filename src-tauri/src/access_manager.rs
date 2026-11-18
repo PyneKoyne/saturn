@@ -423,7 +423,7 @@ fn validate_url(
     raw: &str,
     state: &tauri::State<'_, AccessManager>,
 ) -> Result<PathBuf, AccessError> {
-    let url = if raw.starts_with("/") {
+    let url = if Path::new(raw).is_absolute() {
         Url::from_file_path(raw).map_err(|_| AccessError::InvalidUrl(raw.into()))?
     } else {
         Url::parse(raw).map_err(|_| AccessError::InvalidUrl(raw.into()))?
