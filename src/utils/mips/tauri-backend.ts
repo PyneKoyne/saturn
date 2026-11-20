@@ -17,10 +17,15 @@ import {
   MipsExecution,
 } from './mips'
 import { ExportRegionsOptions } from '../settings'
+import { Platform } from '../platforms'
 
 import { convertFileSrc, invoke } from '@tauri-apps/api/core'
 import { listen } from '@tauri-apps/api/event'
 import { MidiNote } from '../midi'
+
+function toTauriPlatform(platform: Platform): 'Mips' | 'RiscV' {
+  return platform === Platform.RiscV ? 'RiscV' : 'Mips'
+}
 
 export class TauriExecution implements MipsExecution {
   configured: boolean = false
@@ -48,6 +53,7 @@ export class TauriExecution implements MipsExecution {
           bytes,
           path: this.path,
           timeTravel: this.timeTravel,
+          platform: toTauriPlatform(this.platform),
         })
 
         return result
@@ -65,6 +71,7 @@ export class TauriExecution implements MipsExecution {
           text: this.text,
           path: this.path,
           timeTravel: this.timeTravel,
+          platform: toTauriPlatform(this.platform),
         })) as AssemblerResult
 
         if (result.status === 'Success') {
@@ -194,6 +201,7 @@ export class TauriExecution implements MipsExecution {
     public path: string | null,
     public timeTravel: boolean,
     public profile: ExecutionProfile,
+    public platform: Platform,
   ) {
     switch (profile.kind) {
       case 'elf': {
@@ -253,11 +261,13 @@ export class TauriBackend implements MipsBackend {
     text: string,
     path: string | null,
     options: ExportRegionsOptions,
+    platform: Platform,
   ): Promise<HexBinaryResult> {
     const value = (await invoke('assemble_regions', {
       text,
       path,
       options,
+      platform: toTauriPlatform(platform),
     })) as [AssembledRegions | null, AssemblerResult]
 
     const [regions, result] = value
@@ -271,8 +281,13 @@ export class TauriBackend implements MipsBackend {
   async assembleText(
     text: string,
     path: string | null,
+    platform: Platform,
   ): Promise<AssemblerResult> {
-    const result = await invoke('assemble', { text, path })
+    const result = await invoke('assemble', {
+      text,
+      path,
+      platform: toTauriPlatform(platform),
+    })
 
     return result as AssemblerResult
   }
@@ -280,11 +295,13 @@ export class TauriBackend implements MipsBackend {
   async assembleWithBinary(
     text: string,
     path: string | null,
+    platform: Platform,
   ): Promise<BinaryResult> {
-    const result = (await invoke('assemble_binary', { text, path })) as [
-      number[] | null,
-      AssemblerResult,
-    ]
+    const result = (await invoke('assemble_binary', {
+      text,
+      path,
+      platform: toTauriPlatform(platform),
+    })) as [number[] | null, AssemblerResult]
 
     const [binary, assemblerResult] = result
 
@@ -306,8 +323,15 @@ export class TauriBackend implements MipsBackend {
   async decodeInstruction(
     pc: number,
     instruction: number,
+    platform: Platform,
   ): Promise<InstructionDetails | null> {
-    return (await invoke('decode_instruction', { pc, instruction })) ?? null
+    return (
+      (await invoke('decode_instruction', {
+        pc,
+        instruction,
+        platform: toTauriPlatform(platform),
+      })) ?? null
+    )
   }
 
   async disassembleElf(
@@ -321,9 +345,13 @@ export class TauriBackend implements MipsBackend {
     return value as DisassembleResult
   }
 
-  async disassemblyDetails(bytes: ArrayBuffer): Promise<InstructionLine[]> {
+  async disassemblyDetails(
+    bytes: ArrayBuffer,
+    platform: Platform,
+  ): Promise<InstructionLine[]> {
     return await invoke('detailed_disassemble', {
       bytes: Array.from(new Uint8Array(bytes)),
+      platform: toTauriPlatform(platform),
     })
   }
 
@@ -342,8 +370,11 @@ export class TauriBackend implements MipsBackend {
     path: string | null,
     timeTravel: boolean,
     profile: ExecutionProfile,
+    platform: Platform,
   ): Promise<MipsExecution> {
-    return Promise.resolve(new TauriExecution(text, path, timeTravel, profile))
+    return Promise.resolve(
+      new TauriExecution(text, path, timeTravel, profile, platform),
+    )
   }
 
   close() {
