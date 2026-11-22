@@ -166,6 +166,8 @@ export async function saveTab(
     current.path = path
   }
 
+  const snapshot = current.doc.toString()
+
   if (current.path.endsWith('.yjs')) {
     const textEncoder = new TextEncoder()
     const uuid = textEncoder.encode(current.uuid)
@@ -175,11 +177,12 @@ export async function saveTab(
     content.set(data, 36)
     await accessWriteBinary(current.path, content)
   } else {
-    const data = current.doc.toString()
-    await accessWriteText(current.path, data)
+    await accessWriteText(current.path, snapshot)
   }
 
-  current.marked = false // Remove "needs saving" marker
+  if (current.doc === snapshot) {
+    current.marked = false // Remove "needs saving" marker
+  }
 
   return true
 }

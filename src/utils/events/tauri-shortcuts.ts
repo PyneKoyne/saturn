@@ -155,7 +155,7 @@ export async function setupTauriEvents() {
     }
 
     for (const tab of tabsState.tabs) {
-      if (tab.path === modification.path) {
+      if (tab.path === modification.path && !tab.marked) {
         tab.doc = modification.data
 
         tab.marked = false
