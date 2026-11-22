@@ -7,7 +7,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted, ref, watch } from 'vue'
+import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
 
 import { errorHighlights, tab, settings } from '../state/state'
 import { isSyncing } from '../utils/tabs'
@@ -30,11 +30,34 @@ import { Platform } from '../utils/platforms'
 
 const code = ref(null as HTMLElement | null)
 
+let focusHandler: (() => void) | null = null
+
+onUnmounted(() => {
+  if (focusHandler) {
+    window.removeEventListener('focus', focusHandler)
+  }
+})
+
 onMounted(() => {
   const view = new EditorView({
     state: undefined,
     parent: code.value!,
   })
+
+  focusHandler = () => {
+    const active = document.activeElement
+
+    if (
+      !active ||
+      active === document.body ||
+      active === document.documentElement ||
+      active === view.contentDOM
+    ) {
+      view.focus()
+    }
+  }
+
+  window.addEventListener('focus', focusHandler)
 
   watch(
     () => tab()?.state,
