@@ -81,6 +81,8 @@ export interface EditorTab {
   path: string
   writable: boolean
   marked: boolean // needs saving
+  saving?: boolean
+  savedDoc?: string
   profile: ExecutionProfile | null
 }
 
@@ -292,6 +294,8 @@ export function useTabs(): TabsResult {
     )
   }
 
+  let lastBackup = ''
+
   function backup() {
     const state = {
       version: tabsVersion,
@@ -321,12 +325,20 @@ export function useTabs(): TabsResult {
 
       state.tabs.push(restore)
 
-      if (tab.marked) {
-        saveTab(tab, PromptType.NeverPrompt)
+      if (tab.marked && !tab.saving) {
+        tab.saving = true
+        saveTab(tab, PromptType.NeverPrompt).finally(() => {
+          tab.saving = false
+        })
       }
     }
 
-    localStorage.setItem(restoreKey, JSON.stringify(state))
+    const json = JSON.stringify(state)
+
+    if (!editor.tabs.some((tab) => tab.marked) && json !== lastBackup) {
+      lastBackup = json
+      localStorage.setItem(restoreKey, json)
+    }
   }
 
   restore().then(() => {})

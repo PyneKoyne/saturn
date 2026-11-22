@@ -465,13 +465,16 @@ pub fn access_write_text(
     state: tauri::State<'_, AccessManager>,
 ) -> Result<(), AccessError> {
     let path = validate_url(path_raw, &state)?;
+    let is_new = !path.exists();
 
     state.state.get_silent().dismiss.insert(path.clone());
 
     fs::write(&path, content).map_err(|_| AccessError::NotFound(path_raw.to_string()))?;
 
     // Initial watch from select_open may fail because the file does not exist.
-    state.watch(&path);
+    if is_new {
+        state.watch(&path);
+    }
 
     Ok(())
 }

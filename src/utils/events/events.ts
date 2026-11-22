@@ -180,6 +180,8 @@ export async function saveTab(
     await accessWriteText(current.path, snapshot)
   }
 
+  current.savedDoc = snapshot
+
   if (current.doc === snapshot) {
     current.marked = false // Remove "needs saving" marker
   }
