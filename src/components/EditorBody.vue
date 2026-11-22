@@ -24,6 +24,7 @@ import {
   setLang,
 } from '../utils/codemirror/modes'
 import { Diagnostic, setDiagnostics } from '@codemirror/lint'
+import { calcPatch } from 'fast-myers-diff'
 import { hostYTab, setHostFn } from '../utils/codemirror/collab'
 import { Platform } from '../utils/platforms'
 
@@ -59,11 +60,23 @@ onMounted(() => {
   watch(
     () => tab()?.doc,
     (doc) => {
-      if (!isSyncing() && doc) {
-        view.dispatch({
-          changes: { from: 0, to: view.state.doc.length, insert: doc },
-        })
+      if (isSyncing() || !doc) {
+        return
       }
+
+      const current = view.state.doc.toString()
+
+      if (doc === current) {
+        return
+      }
+
+      view.dispatch({
+        changes: Array.from(calcPatch(current, doc), ([from, to, insert]) => ({
+          from,
+          to,
+          insert,
+        })),
+      })
     },
     { flush: 'sync' },
   )
